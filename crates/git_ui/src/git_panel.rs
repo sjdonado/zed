@@ -4102,12 +4102,22 @@ impl GitPanel {
                 Some(current_message)
             };
         } else if !value && self.amend_pending {
-            let message = self.original_commit_message.take().unwrap_or_default();
-            self.commit_message_buffer(cx).update(cx, |buffer, cx| {
-                let start = buffer.anchor_before(0);
-                let end = buffer.anchor_after(buffer.len());
-                buffer.edit([(start..end, message)], None, cx);
-            });
+            let current_message = self.commit_message_buffer(cx).read(cx).text();
+            if let Some(original_message) = self.original_commit_message.take() {
+                if current_message.trim().is_empty() {
+                    self.commit_message_buffer(cx).update(cx, |buffer, cx| {
+                        let start = buffer.anchor_before(0);
+                        let end = buffer.anchor_after(buffer.len());
+                        buffer.edit([(start..end, original_message)], None, cx);
+                    });
+                }
+            } else {
+                self.commit_message_buffer(cx).update(cx, |buffer, cx| {
+                    let start = buffer.anchor_before(0);
+                    let end = buffer.anchor_after(buffer.len());
+                    buffer.edit([(start..end, String::new())], None, cx);
+                });
+            }
         }
 
         self.amend_pending = value;

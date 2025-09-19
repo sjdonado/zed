@@ -5301,5 +5301,27 @@ mod tests {
             let current_message = panel.commit_message_buffer(cx).read(cx).text();
             assert_eq!(current_message, "");
         });
+
+        // Test: User has a non empty commit message, enables amend, types an amend message, then does the new commit (should preserve new message)
+        panel.update(cx, |panel, cx| {
+            panel.commit_message_buffer(cx).update(cx, |buffer, cx| {
+                let start = buffer.anchor_before(0);
+                let end = buffer.anchor_after(buffer.len());
+                buffer.edit([(start..end, "Initial commit message")], None, cx);
+            });
+
+            panel.set_amend_pending(true, cx);
+
+            panel.commit_message_buffer(cx).update(cx, |buffer, cx| {
+                let start = buffer.anchor_before(0);
+                let end = buffer.anchor_after(buffer.len());
+                buffer.edit([(start..end, "Amended commit message")], None, cx);
+            });
+
+            panel.set_amend_pending(false, cx);
+
+            let message_after_commit = panel.commit_message_buffer(cx).read(cx).text();
+            assert_eq!(message_after_commit, "Amended commit message");
+        });
     }
 }
